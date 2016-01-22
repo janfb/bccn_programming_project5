@@ -3,7 +3,8 @@ from brian import Network, Equations, NeuronGroup, Connection, \
     SpikeMonitor, raster_plot, StateMonitor, clear, reinit, Clock
 from brian.stdunits import ms, mV
 from matplotlib import pylab
-from utils import get_cluster_connection_probs, spikes_to_binary
+from utils import get_cluster_connection_probs, spikes_to_binary,\
+                  firing_rates, fano_factor
 from sklearn.cross_validation import KFold
 import matplotlib.pyplot as plt
 import pdb
@@ -168,4 +169,10 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1, k=50, 
 
     return all_data
 
-results = run_simulation(ree=1.5, alpha=0.2)
+results = run_simulation(trials=1, ree=1.5, alpha=0.2)
+n_e = int(4000 * 0.2)
+
+fr_vec = firing_rates(results[0, 0, :n_e , :], 1.5)
+
+plt.hist(fr_vec)
+plt.show()

@@ -23,3 +23,15 @@ def spikes_to_binary(M):
         for t_sp in sp_times:
             binarr[k][np.argmin(np.abs(t_sp-tpnts))] = 1
     return binarr
+
+def firing_rates(spike_data, time):
+    'Return firing rate for each neuron n from *spike_data* (n, m)'
+    return spike_data.sum(axis=1)/time
+
+def fano_factor(spike_data):
+    """
+    Computes Fano factor from matrix *spike_data* of shape (k, n, m)
+    where *k* - nr of trials, *n* - nr of neurons, *m* - time steps
+    """
+    return np.var(spike_data.sum(axis=2), axis=0)/np.mean(spike_data.sum(axis=2), axis=0)
+
