@@ -1,11 +1,13 @@
 import numpy as np
 from brian import Network, Equations, NeuronGroup, Connection, \
-    SpikeMonitor, raster_plot, StateMonitor, clear, reinit
+    SpikeMonitor, raster_plot, StateMonitor, clear, reinit, Clock
 from brian.stdunits import ms, mV
 from matplotlib import pylab
-from utils import get_cluster_connection_probs
+from utils import get_cluster_connection_probs, spikes_to_binary,\
+                  firing_rates, fano_factor
 from sklearn.cross_validation import KFold
 import matplotlib.pyplot as plt
+import pdb
 
 pylab.rcParams['figure.figsize'] = 12, 8  # changes figure size (width, height) for larger images
 
@@ -64,7 +66,8 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1, k=50, 
     wee_cluster = wee if p_in == p_out else 1.9 * wee
 
     # define numpy array for data storing
-    all_data = np.zeros((realizations, trials, n_e+n_i, t/ms))
+    dt = float(Clock().dt)
+    all_data = np.zeros((realizations, trials, n_e+n_i, int(float(t)/dt)//2))
 
     for realization in range(realizations):
         # clear workspace to make sure that is a new realization of the network
@@ -127,7 +130,8 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1, k=50, 
             # set up spike monitors
             spike_mon_e = SpikeMonitor(neurons_e)
             spike_mon_i = SpikeMonitor(neurons_i)
-
+            spike_mon_e.reinit()
+            spike_mon_i.reinit()
             # set initial conditions
             all_neurons.V = vr + (vt - vr) * np.random.rand(len(all_neurons))
 
@@ -140,14 +144,15 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1, k=50, 
 
             # TODO find a way to reset the monitor properly
             # reset monitors to start recording phase
-            #spike_mon_e = SpikeMonitor(neurons_e)
-            #spike_mon_i = SpikeMonitor(neurons_i)
-
+            spike_mon_e.reinit()
+            spike_mon_i.reinit()
             # Recording phase
-            #network.run(t / 2, report='text')
+            network.run(t / 2, report='text')
 
             # TODO save the spike monitor output to the all_data matrix.
-            #all_data[realization, trial, :, :] =
+            #pdb.set_trace()
+            all_data[realization, trial, :n_e , :] = spikes_to_binary(spike_mon_e)
+            all_data[realization, trial, n_e: , :] = spikes_to_binary(spike_mon_i)
 
     if verbose:
         # Plot spike raster plots, blue exc neurons, red inh neurons
@@ -164,4 +169,10 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1, k=50, 
 
     return all_data
 
-results = run_simulation()
+results = run_simulation(trials=1, ree=1.5, alpha=0.2)
+n_e = int(4000 * 0.2)
+
+fr_vec = firing_rates(results[0, 0, :n_e , :], 1.5)
+
+plt.hist(fr_vec)
+plt.show()
