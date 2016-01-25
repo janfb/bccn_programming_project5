@@ -4,7 +4,7 @@ from brian import Network, Equations, NeuronGroup, Connection, \
 from brian.stdunits import ms, mV
 from matplotlib import pylab
 from utils import get_cluster_connection_probs, spikes_to_binary,\
-                  firing_rates, fano_factor
+                  firing_rates, fano_factor, spikes_counter
 from sklearn.cross_validation import KFold
 import matplotlib.pyplot as plt
 import pdb
@@ -51,25 +51,28 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
     refrac = 5 * ms  # absolute refractory period
 
     # scale the weights to ensure same variance in the inputs
-    wee = 0.024 * 15 * mV * np.sqrt(1. / alpha)
-    wei = 0.014 * 15 * mV * np.sqrt(1. / alpha)
-    wii = -0.057 * 15 * mV * np.sqrt(1. / alpha)
-    wie = -0.045 * 15 * mV * np.sqrt(1. / alpha)
+    wee = 0.024 * (vt - vr) * np.sqrt(1. / alpha)
+    wei = 0.014 * (vt - vr) * np.sqrt(1. / alpha)
+    wii = -0.057 * (vt - vr) * np.sqrt(1. / alpha)
+    wie = -0.045 * (vt - vr) * np.sqrt(1. / alpha)
 
     # Connection probability
     p_ee = 0.2
     p_ii = 0.5
     p_ei = 0.5
     p_ie = 0.5
+    
     # determine probs for inside and outside of clusters
     p_in, p_out = get_cluster_connection_probs(ree, k, p_ee)
+
+    mu_min_e, mu_max_e = 1.1, 1.2
+    mu_min_i, mu_max_i = 1.0, 1.05
 
     # increase cluster weights if there are clusters
     wee_cluster = wee if p_in == p_out else 1.9 * wee
 
     # define numpy array for data storing
-    dt = float(Clock().dt)
-    all_data = np.zeros((realizations, trials, n_e+n_i, int(float(t)/dt)//2))
+    all_data = np.zeros((realizations, trials, n_e+n_i, int(t/winlen)//2))
 
     for realization in range(realizations):
         # clear workspace to make sure that is a new realization of the network
@@ -77,8 +80,8 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
         reinit()
 
         # set up new random bias parameter for every type of neuron
-        mu_e = vr + np.random.uniform(1.1, 1.2, n_e) * (vt - vr)  # bias for excitatory neurons
-        mu_i = vr + np.random.uniform(1.0, 1.05, n_i) * (vt - vr)  # bias for excitatory neurons
+        mu_e = vr + np.random.uniform(mu_min_e, mu_max_e, n_e) * (vt - vr)  # bias for excitatory neurons
+        mu_i = vr + np.random.uniform(mu_min_i, mu_max_i, n_i) * (vt - vr)  # bias for excitatory neurons
 
         # Let's create an equation object from our string and parameters
         model_eqs = Equations(eqs_string)
@@ -113,18 +116,18 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
         kf = KFold(n=n_e, n_folds=k)
         for idx_out, idx_in in kf:  # idx_out holds all other neurons; idx_in holds all cluster neurons
             # connect current cluster to itself
-            connections.connect_random(all_neurons[idx_in[0]:idx_in[-1]], all_neurons[idx_in[0]:idx_in[-1]], 'y',
+            connections.connect_random(all_neurons[idx_in[0]:idx_in[-1]], all_neurons[idx_in[0]:idx_in[-1]],
                                        sparseness=p_in, weight=wee_cluster)
             # connect current cluster to other neurons
-            connections.connect_random(all_neurons[idx_in[0]:idx_in[-1]], all_neurons[idx_out[0]:idx_out[-1]], 'y',
+            connections.connect_random(all_neurons[idx_in[0]:idx_in[-1]], all_neurons[idx_out[0]:idx_out[-1]],
                                        sparseness=p_out, weight=wee)
 
         # connect all excitatory to all inhibitory, irrespective of clustering
-        connections.connect_random(all_neurons[0:n_e], all_neurons[n_e:(n_e + n_i)], 'y', sparseness=p_ei, weight=wei)
+        connections.connect_random(all_neurons[0:n_e], all_neurons[n_e:(n_e + n_i)], sparseness=p_ei, weight=wei)
         # connect all inhibitory to all excitatory
-        connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[0:n_e], 'y', sparseness=p_ie, weight=wie)
+        connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[0:n_e], sparseness=p_ie, weight=wie)
         # connect all inhibitory to all inhibitory
-        connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[n_e:(n_e + n_i)], 'y', sparseness=p_ii,
+        connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[n_e:(n_e + n_i)], sparseness=p_ii,
                                    weight=wii)
 
         # run this network for some number of trials, every time with different initial values
@@ -152,9 +155,10 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
             network.run(t / 2, report='text')
 
             # TODO save the spike monitor output to the all_data matrix.
-            #pdb.set_trace()
-            all_data[realization, trial, :n_e , :] = spikes_to_binary(spike_mon_e)
-            all_data[realization, trial, n_e: , :] = spikes_to_binary(spike_mon_i)
+            pdb.set_trace()
+            all_data[realization, trial, :n_e , :] = spikes_counter(spike_mon_e, winlen)
+            all_data[realization, trial, n_e: , :] = spikes_counter(spike_mon_i, winlen)
+            print spike_mon_e.nspikes+spike_mon_i.nspikes
 
     if verbose:
         # Plot spike raster plots, blue exc neurons, red inh neurons
@@ -172,8 +176,9 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
     return all_data
 
 alpha = 1.
-results_1 = run_simulation(trials=5, ree=1., alpha=alpha, verbose=0)
+results_1 = run_simulation(trials=1, ree=1., alpha=alpha, verbose=0)
 
+print np.sum(results_1)
 rs, trs, nns, ts = results_1.shape
 winlen = ts*0.1/1.5 # length of 100 ms window
 n_e = int(4000 * alpha)
