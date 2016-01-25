@@ -24,6 +24,31 @@ def spikes_to_binary(M):
             binarr[k][np.argmin(np.abs(t_sp-tpnts))] = 1
     return binarr
 
+def spikes_counter(M, timewin):
+    '''
+    From SpikeMonitor object it returns a numpy array with spikes counts
+    in time windows
+    spikes in particular time points.
+    :param M: SpikeMonitor object
+    :return: numpy matrix with spike times
+    '''
+    try:
+        tpnts = np.arange(M.clock.start, M.clock.end+timewin, timewin)
+    except AttributeError:
+        raise AttributeError("SpikeMonitor doesn't contain any recordings")
+    print(len(tpnts))
+    counts = np.zeros((len(M.spiketimes.keys()), len(tpnts)-1))
+    for k, sp_times in M.spiketimes.items():
+        if len(sp_times)==0:
+            continue
+        for t_sp in sp_times:
+            idxs = np.where(tpnts>=t_sp)[0]
+            if len(idxs)==0:
+                counts[k][-1] += 1
+            else:
+                counts[k][idxs[0]-1] += 1
+    return counts
+
 def firing_rates(spike_data, time):
     'Return firing rate for each neuron n from *spike_data* (n, m)'
     return spike_data.sum(axis=1)/time
@@ -33,5 +58,10 @@ def fano_factor(spike_data):
     Computes Fano factor from matrix *spike_data* of shape (k, n, m)
     where *k* - nr of trials, *n* - nr of neurons, *m* - time steps
     """
-    return np.var(spike_data.sum(axis=2), axis=0)/np.mean(spike_data.sum(axis=2), axis=0)
+    if spike_data.ndim>3:
+        return np.var(spike_data.sum(axis=3).mean(axis=2), axis=0)/ \
+                    np.mean(spike_data.sum(axis=3).mean(axis=2), axis=0)
+    else:
+        return np.var(spike_data.sum(axis=2), axis=0)/ \
+                                 np.mean(spike_data.sum(axis=2), axis=0)
 
