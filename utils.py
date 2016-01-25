@@ -33,5 +33,10 @@ def fano_factor(spike_data):
     Computes Fano factor from matrix *spike_data* of shape (k, n, m)
     where *k* - nr of trials, *n* - nr of neurons, *m* - time steps
     """
-    return np.var(spike_data.sum(axis=2), axis=0)/np.mean(spike_data.sum(axis=2), axis=0)
+    if spike_data.ndim>3:
+        return np.var(spike_data.sum(axis=3).mean(axis=2), axis=0)/ \
+                    np.mean(spike_data.sum(axis=3).mean(axis=2), axis=0)
+    else:
+        return np.var(spike_data.sum(axis=2), axis=0)/ \
+                                 np.mean(spike_data.sum(axis=2), axis=0)
 

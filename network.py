@@ -12,8 +12,10 @@ import pdb
 pylab.rcParams['figure.figsize'] = 12, 8  # changes figure size (width, height) for larger images
 
 
-def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1, k=50, verbose=True):
-    """Run the whole simulation with the specified parameters. All model parameter are set in the function.
+def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
+                                            k=50, winlen = 50 *ms,  verbose=True):
+    """
+    Run the whole simulation with the specified parameters. All model parameter are set in the function.
 
     Keyword arguments:
     :param realizations: number of repititions of the whole simulation, number of network instances
@@ -169,10 +171,9 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1, k=50, 
 
     return all_data
 
-results = run_simulation(trials=1, ree=1.5, alpha=0.2)
-n_e = int(4000 * 0.2)
+alpha = 1.
+results_1 = run_simulation(trials=5, ree=1., alpha=alpha, verbose=0)
 
-fr_vec = firing_rates(results[0, 0, :n_e , :], 1.5)
-
-plt.hist(fr_vec)
-plt.show()
+rs, trs, nns, ts = results_1.shape
+winlen = ts*0.1/1.5 # length of 100 ms window
+n_e = int(4000 * alpha)
