@@ -109,42 +109,92 @@ def extract_cluster_corr_coef(rho, k=50):
     n_neurons = rho.shape[0]
     # determine number of pairs for cluster
     neurons_per_cluster = n_neurons / k
-    pairs_per_cluster = neurons_per_cluster * (neurons_per_cluster - 1) / 2. + neurons_per_cluster
+    pairs_per_cluster = neurons_per_cluster * (neurons_per_cluster - 1) / 2.
     cluster_corr_coef = np.zeros((k, pairs_per_cluster))
     for k_idx in range(k):
         # get cluster part from corr_coef matrix
         cluster_cc = rho[(k_idx * neurons_per_cluster):(k_idx + 1) * neurons_per_cluster,
                          (k_idx * neurons_per_cluster):(k_idx + 1) * neurons_per_cluster]
-        # get entries from lower triangle in array
-        i, j = np.triu_indices(cluster_cc.shape[0])  # get indices
-        cluster_corr_coef[k_idx, :] = cluster_cc[i, j]
-    return cluster_corr_coef
+        # save lower triangle of current cluster corr matrix in matrix for all clusters
+        cluster_corr_coef[k_idx, :] = get_lower_triangle(cluster_cc)
+    # remove nans before returning
+    return remove_nans(cluster_corr_coef)
 
 
-def extract_uniform_corr_coef(rho):
+def extract_all_corr_coef(rho):
     """
-    extracts only relevant values from correlation matrix rho
+    Extracts only relevant values from correlation matrix rho
     :param rho: correlation matrix
     :return: 1D array of correlation values
     """
-    # get lower triangle indices
-    k, l = np.triu_indices(rho.shape[0])
-    # return corr coefs in array
-    rho_vec = rho[k, l]
+    # get lower triangle of the corr matrix as vector
+    rho_vec = get_lower_triangle(rho)
     # remove nans
-    return rho_vec[np.isfinite(rho_vec)]
+    return remove_nans(rho_vec)
 
 
-def plot_histogram(data, binwidth):
+def extract_random_corr_coef(rho, size):
     """
-    Plot histogram for given list of arrays in data
-    :param data: list of arrays to be plotted in the histogram
+    Extracts values of random subset of neurons pairs from correlation matrix rho
+    :param rho: correlation matrix
+    :param size: size of subset
+    :return: 1D array of correlation values
+    """
+    # get indices of random pairs
+    idx = np.random.randint(0,rho.shape[0]-1, size=size)
+    rho_vec = get_lower_triangle(rho)
+    # remove nans
+    return remove_nans(rho_vec[idx])
+
+
+def get_lower_triangle(m):
+    """
+    Extracts lower triangle of matrix, without diagonal
+    :param m: matrix
+    :return: lower triangle
+    """
+    # get lower triangle indices without diagonal (k<0)
+    i,j = np.tril_indices(m.shape[0], k=-1)
+    # return entries in correlation matrix in array
+    return m[i,j]
+
+
+def remove_nans(m, keep_matrix=False):
+    """
+    removes nans from a matrix. if keep_matrix is True then nans are set to zero and the matrix is returned. Else,
+    a vector with all finite values of the matrix is returned.
+    :param m: matrix
+    :param keep_matrix: flag for keeping the structure of the matrix
+    :return: matrix or vec without nans
+    """
+    if keep_matrix:
+        for i in range(m.shape[0]):
+            # get current row and set nans to zero
+            tmp = m[i, :]
+            tmp[np.isnan(tmp)] = 0
+            # replace row in m
+            m[i, :] = tmp
+    else:
+        m = m[np.isfinite(m)]
+    return m
+
+
+def plot_histogram(data1, data2, binwidth, xlabel=''):
+    """
+    Plot histogram for twp given arrays of  data
+    :param data1: first array
+    :param data2: second array
     :param binwidth: width of the bins
+    :param xlabel: string for xlabel
     :return: no return
     """
-    for d in data:
-        # TODO plot mean as triangle
-        mean = data[d].mean()
-        # TODO fix the access to the list
-        bins = np.arange(min(data[d]), max(data[d]) + binwidth, binwidth)
-        plt.hist(data[d], bins=bins, align='left', histtype='step')
+    # plot the two array as step histogram
+    bins1 = np.arange(min(data1), max(data1) + binwidth, binwidth)
+    plt.hist(data1, bins=bins1, align='left', histtype='step')
+    plt.axvline(data1.mean(), color='b', linestyle='dashed', linewidth=2)
+    bins2 = np.arange(min(data2), max(data2) + binwidth, binwidth)
+    plt.hist(data2, bins=bins2, align='left', histtype='step')
+    plt.axvline(data2.mean(), color='g', linestyle='dashed', linewidth=2)
+    plt.legend(['mean uni', 'mean clus', 'Uniform', 'Clustered'])
+    plt.xlabel(xlabel)
+    plt.ylabel('Count')
