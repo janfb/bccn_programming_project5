@@ -13,7 +13,7 @@ pylab.rcParams['figure.figsize'] = 12, 8  # changes figure size (width, height) 
 
 
 def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
-                                            k=50, winlen = 50 *ms,  verbose=True):
+                                            k=50, winlen = 50 * ms,  verbose=True):
     """
     Run the whole simulation with the specified parameters. All model parameter are set in the function.
 
@@ -155,7 +155,6 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
             network.run(t / 2, report='text')
 
             # TODO save the spike monitor output to the all_data matrix.
-            pdb.set_trace()
             all_data[realization, trial, :n_e , :] = spikes_counter(spike_mon_e, winlen)
             all_data[realization, trial, n_e: , :] = spikes_counter(spike_mon_i, winlen)
             print spike_mon_e.nspikes+spike_mon_i.nspikes
@@ -174,11 +173,3 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
         plt.show()
 
     return all_data
-
-alpha = 1.
-results_1 = run_simulation(trials=1, ree=1., alpha=alpha, verbose=0)
-
-print np.sum(results_1)
-rs, trs, nns, ts = results_1.shape
-winlen = ts*0.1/1.5 # length of 100 ms window
-n_e = int(4000 * alpha)
