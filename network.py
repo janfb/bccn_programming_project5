@@ -23,6 +23,7 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
     :param alpha: scaling factor for number of neurons in the network
     :param ree: clustering coefficient
     :param k: number of clusters
+    :param winlen: length of window in ms
     :param verbose: plotting flag
     :return: numpy matrices with spike times
     """
@@ -181,4 +182,4 @@ if __name__=='__main__':
     spk_counts_1 = run_simulation(realizations=nr_realiz, trials=nr_tr,
                                   alpha=alpha, ree=1,verbose=True)
     spk_counts_2 = run_simulation(realizations=nr_realiz, trials=nr_tr,
-                                  alpha=alpha, ree=2,verbose=True)
+                                  alpha=alpha, ree=2.5,verbose=True)
