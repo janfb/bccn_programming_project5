@@ -57,16 +57,16 @@ def spikes_counter(M, timewin):
 
 
 def firing_rates(spike_data, time):
-    'Return firing rate for each neuron n from *spike_data* (n, m)'
+    'Return firing rate for each neuron n from *spike_data*'
     return (spike_data.sum(axis=-1)).flatten() / time
 
 def fano_factor(spike_data):
     """
-    Computes Fano factor from matrix *spike_data* of shape (k, n, m)
-    where *k* - nr of trials, *n* - nr of neurons, *m* - time steps
+    Computes Fano factor from matrix *spike_data* of shape (r, k, n, m)
+    where *r* - realizations, *k* - nr of trials, *n* - nr of neurons,
+    *m* - time steps
     """
-    return  (np.var(spike_data, axis=1)/np.mean(spike_data, axis=1)).flatten()
-
+    return (np.var(spike_data, axis=1)/np.mean(spike_data, axis=1)).flatten()
 
 def corr_coef(trial_data):
     """
@@ -90,9 +90,31 @@ def corr_coef(trial_data):
                 var_factor[t] = np.sqrt(np.mean(np.var(trial_data[t, i, :])) * np.mean(np.var(trial_data[t, j, :])))
             rho[i, j] = np.mean(cov) / np.mean(var_factor)
             rho[j, i] = rho[i, j]
-
     return rho
 
+def corr_coef_new(trial_data):
+    """
+    computes pairwise correlation coefficient form given matrix of trial data
+    With numpy corrcoef instead of explicit calculations.
+    :param trial_data: matrix of trial data with dimension trials x neurons x timewindows.
+    :return: correlation matrix rho
+    """
+
+    n_trials = trial_data.shape[0]
+    n_neurons = trial_data.shape[1]
+
+    rho = np.zeros((n_neurons, n_neurons))
+    cov = np.zeros(n_trials)
+    var_factor = np.zeros(n_trials)
+
+    for i in range(n_neurons):
+        for j in range(i + 1):
+            for t in range(n_trials):
+                cov[t] = np.corrcoef(trial_data[t,i,:], trial_data[t,j,:])[0,1]
+            cov_n = cov[~np.isnan(cov)]
+            rho[i, j] = np.mean(cov_n)
+            rho[j, i] = rho[i, j]
+    return rho
 
 def extract_cluster_corr_coef(rho, k=50):
     """
@@ -173,6 +195,22 @@ def remove_nans(m, keep_matrix=False):
         m = m[np.isfinite(m)]
     return m
 
+def sample_in_cluster(nrns=4000, k=50, picked=20):
+    '''
+    Reduce number of neurons to *picked* in every of *k* clusters.
+    :param nrns: total numer of neurons
+    :param k: number of clusters
+    :param picked: how many neurons pick from each cluster
+    :return: indices of chosen neurons
+    '''
+    ncl = nrns//k                # neuron in cluster
+    assert ncl>picked, "picked is too big"
+    nrnnumbers = np.arange(nrns) # indices of all neurons
+    idxvec = np.zeros(k*picked)  # vector with new indices
+    for i in range(k):
+        ix_ = np.random.choice(ncl, picked, replace=False)
+        idxvec[i*picked:(i+1)*picked] = nrnnumbers[i*ncl:(i+1)*ncl][ix_]
+    return idxvec.astype('int')
 
 def plot_histogram(data1, data2, binwidth, xlabel=''):
     """

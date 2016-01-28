@@ -180,4 +180,4 @@ if __name__=='__main__':
     spk_counts_1 = run_simulation(realizations=nr_realiz, trials=nr_tr,
                                   alpha=alpha, ree=1,verbose=True)
     spk_counts_2 = run_simulation(realizations=nr_realiz, trials=nr_tr,
-                                  alpha=alpha, ree=2,verbose=True)
+                                  alpha=alpha, ree=2.5,verbose=True)
