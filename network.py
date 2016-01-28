@@ -3,8 +3,7 @@ from brian import Network, Equations, NeuronGroup, Connection, \
     SpikeMonitor, raster_plot, StateMonitor, clear, reinit, Clock
 from brian.stdunits import ms, mV
 from matplotlib import pylab
-from utils import get_cluster_connection_probs, spikes_to_binary,\
-                  firing_rates, fano_factor, spikes_counter
+from utils import *
 from sklearn.cross_validation import KFold
 import matplotlib.pyplot as plt
 import pdb
@@ -157,7 +156,6 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
             # TODO save the spike monitor output to the all_data matrix.
             all_data[realization, trial, :n_e , :] = spikes_counter(spike_mon_e, winlen)
             all_data[realization, trial, n_e: , :] = spikes_counter(spike_mon_i, winlen)
-            print spike_mon_e.nspikes+spike_mon_i.nspikes
 
     if verbose:
         # Plot spike raster plots, blue exc neurons, red inh neurons
@@ -173,3 +171,13 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
         plt.show()
 
     return all_data
+
+if __name__=='__main__':
+    # standard simulation from article
+    nr_realiz = 12
+    nr_tr     = 9
+    alpha     = 1.
+    spk_counts_1 = run_simulation(realizations=nr_realiz, trials=nr_tr,
+                                  alpha=alpha, ree=1,verbose=True)
+    spk_counts_2 = run_simulation(realizations=nr_realiz, trials=nr_tr,
+                                  alpha=alpha, ree=2,verbose=True)
