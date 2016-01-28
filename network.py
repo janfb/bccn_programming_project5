@@ -47,19 +47,20 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
     tau_syn_1 = 1 * ms  # exc/inh synaptic time constant tau1 in paper
     vt = -50 * mV  # firing threshold
     vr = -65 * mV  # reset potential
+    dv = vt - vr # delta v
     refrac = 5 * ms  # absolute refractory period
 
     # scale the weights to ensure same variance in the inputs
-    wee = 0.024 * (vt - vr) * np.sqrt(1. / alpha)
-    wei = 0.014 * (vt - vr) * np.sqrt(1. / alpha)
-    wii = -0.057 * (vt - vr) * np.sqrt(1. / alpha)
-    wie = -0.045 * (vt - vr) * np.sqrt(1. / alpha)
+    wee = 0.024 * dv * np.sqrt(1. / alpha)
+    wie = 0.014 * dv * np.sqrt(1. / alpha)
+    wii = -0.057 * dv * np.sqrt(1. / alpha)
+    wei = -0.045 * dv * np.sqrt(1. / alpha)
 
     # Connection probability
     p_ee = 0.2
     p_ii = 0.5
-    p_ei = 0.5
     p_ie = 0.5
+    p_ei = 0.5
     
     # determine probs for inside and outside of clusters
     p_in, p_out = get_cluster_connection_probs(ree, k, p_ee)
@@ -79,8 +80,8 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
         reinit()
 
         # set up new random bias parameter for every type of neuron
-        mu_e = vr + np.random.uniform(mu_min_e, mu_max_e, n_e) * (vt - vr)  # bias for excitatory neurons
-        mu_i = vr + np.random.uniform(mu_min_i, mu_max_i, n_i) * (vt - vr)  # bias for excitatory neurons
+        mu_e = vr + np.random.uniform(mu_min_e, mu_max_e, n_e) * dv  # bias for excitatory neurons
+        mu_i = vr + np.random.uniform(mu_min_i, mu_max_i, n_i) * dv  # bias for excitatory neurons
 
         # Let's create an equation object from our string and parameters
         model_eqs = Equations(eqs_string)
@@ -122,9 +123,9 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
                                        sparseness=p_out, weight=wee)
 
         # connect all excitatory to all inhibitory, irrespective of clustering
-        connections.connect_random(all_neurons[0:n_e], all_neurons[n_e:(n_e + n_i)], sparseness=p_ei, weight=wei)
+        connections.connect_random(all_neurons[0:n_e], all_neurons[n_e:(n_e + n_i)], sparseness=p_ie, weight=wie)
         # connect all inhibitory to all excitatory
-        connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[0:n_e], sparseness=p_ie, weight=wie)
+        connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[0:n_e], sparseness=p_ei, weight=wei)
         # connect all inhibitory to all inhibitory
         connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[n_e:(n_e + n_i)], sparseness=p_ii,
                                    weight=wii)
