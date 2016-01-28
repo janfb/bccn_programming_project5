@@ -55,22 +55,17 @@ def spikes_counter(M, timewin):
     return counts
 
 
+
 def firing_rates(spike_data, time):
     'Return firing rate for each neuron n from *spike_data* (n, m)'
-    return spike_data.sum(axis=1) / time
-
+    return (spike_data.sum(axis=-1)).flatten() / time
 
 def fano_factor(spike_data):
     """
     Computes Fano factor from matrix *spike_data* of shape (k, n, m)
     where *k* - nr of trials, *n* - nr of neurons, *m* - time steps
     """
-    if spike_data.ndim > 3:
-        return np.var(spike_data.sum(axis=3).mean(axis=2), axis=0) / \
-               np.mean(spike_data.sum(axis=3).mean(axis=2), axis=0)
-    else:
-        return np.var(spike_data.sum(axis=2), axis=0) / \
-               np.mean(spike_data.sum(axis=2), axis=0)
+    return  (np.var(spike_data, axis=1)/np.mean(spike_data, axis=1)).flatten()
 
 
 def corr_coef(trial_data):
