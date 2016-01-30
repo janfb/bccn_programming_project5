@@ -8,7 +8,6 @@ def get_cluster_connection_probs(REE, k, pee):
     p_in = REE * p_out
     return p_in, p_out
 
-
 def spikes_to_binary(M):
     """
     From SpikeMonitor object it returns a binary numpy array with
@@ -214,7 +213,7 @@ def sample_in_cluster(nrns=4000, k=50, picked=20):
 
 def plot_histogram(data1, data2, binwidth, xlabel=''):
     """
-    Plot histogram for twp given arrays of  data
+    Plot histogram for two given arrays of  data
     :param data1: first array
     :param data2: second array
     :param binwidth: width of the bins
@@ -231,3 +230,22 @@ def plot_histogram(data1, data2, binwidth, xlabel=''):
     plt.legend(['mean uni', 'mean clus', 'Uniform', 'Clustered'])
     plt.xlabel(xlabel)
     plt.ylabel('Count')
+
+def plot_correlation(rho1, rho2, binwidth, title='', show=True):
+    """
+    Plot correlation histograms for two given arrays. It picks the same
+    number of valid values from both matrices by random.
+    :param rho1: first correlation array
+    :param rho2: second correlation array
+    :param binwidth: width of the bins
+    :param title: string for plot title
+    :param show: boolean value - if True than picture is shown
+    :return: no return
+    """
+    min_length = min(len(rho1), len(rho2))
+    rho1_pick = rho1[np.random.choice(len(rho1),size=min_length, replace=False)]
+    rho2_pick = rho2[np.random.choice(len(rho2),size=min_length, replace=False)]
+    plot_histogram(rho1_pick, rho2_pick, binwidth, xlabel='correlation')
+    plt.title(title)
+    if show:
+        plt.show()
