@@ -12,7 +12,7 @@ pylab.rcParams['figure.figsize'] = 12, 8  # changes figure size (width, height) 
 
 
 def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
-                                            k=50, winlen = 50 * ms,  verbose=True, stimulation_time = 0):
+                   k=50, winlen = 50 * ms, verbose=True, t_stim = 0):
     """
     Run the whole simulation with the specified parameters. All model parameter are set in the function.
 
@@ -23,7 +23,7 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
     :param alpha: scaling factor for number of neurons in the network
     :param ree: clustering coefficient
     :param k: number of clusters
-    :param simulation_time : duration of stimulation of a subset of clusters
+    :param t_stim : duration of stimulation of a subset of clusters
     :param winlen: length of window in ms
     :param verbose: plotting flag
     :return: numpy matrices with spike times
@@ -154,20 +154,29 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
             spike_mon_i.reinit()
 
             # stimulation if duration is given
-            if not(stimulation_time==0):
+            # define index variable for the stimulation possibility (is 0 for stimulation time=0)
+            t_stim_idx = int(t_stim * ms / winlen)
+            if not(t_stim==0):
                 # Stimulation phase, increase input to subset of clusters
-                all_neurons[:400].mu += 0.07
-                network.add(all_neurons)
-                network.run(stimulation_time*ms, report='text')
+                all_neurons[:400].mu += 0.07 * dv
+                network.run(t_stim * ms, report='text')
                 # set back to normal
-                all_neurons[:400].mu -= 0.07
-                network.add(all_neurons)
+                all_neurons[:400].mu -= 0.07 * dv
+                # save data
+                print spikes_counter(spike_mon_e, winlen).shape
+                print all_data[realization, trial, :n_e , :t_stim_idx].shape
+                print t_stim_idx
+                all_data[realization, trial, :n_e, :t_stim_idx] = spikes_counter(spike_mon_e, winlen)
+                all_data[realization, trial, n_e:, :t_stim_idx] = spikes_counter(spike_mon_i, winlen)
+                # reset monitors
+                spike_mon_e.reinit()
+                spike_mon_i.reinit()
             # run the remaining time of the simulation
-            network.run((t/2 - stimulation_time*ms), report='text')
+            network.run((t / 2 - t_stim * ms), report='text')
 
             # TODO save the spike monitor output to the all_data matrix.
-            #all_data[realization, trial, :n_e , :] = spikes_counter(spike_mon_e, winlen)
-            #all_data[realization, trial, n_e: , :] = spikes_counter(spike_mon_i, winlen)
+            all_data[realization, trial, :n_e, t_stim_idx:] = spikes_counter(spike_mon_e, winlen)
+            all_data[realization, trial, n_e:, t_stim_idx:] = spikes_counter(spike_mon_i, winlen)
 
     if verbose:
         # Plot spike raster plots, blue exc neurons, red inh neurons
