@@ -6,7 +6,6 @@ from matplotlib import pylab
 from utils import *
 from sklearn.cross_validation import KFold
 import matplotlib.pyplot as plt
-import pdb
 
 pylab.rcParams['figure.figsize'] = 12, 8  # changes figure size (width, height) for larger images
 

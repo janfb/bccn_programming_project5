@@ -1,6 +1,5 @@
 from network import run_simulation
 import numpy as np
-import matplotlib.pyplot as plt
 from brian.stdunits import ms
 
 ree_steps = np.linspace(1, 4, 13)

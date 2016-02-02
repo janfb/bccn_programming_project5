@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.cross_validation import KFold
 import matplotlib.pyplot as plt
 
 
@@ -7,6 +6,7 @@ def get_cluster_connection_probs(REE, k, pee):
     p_out = pee * k / (REE + k - 1)
     p_in = REE * p_out
     return p_in, p_out
+
 
 def spikes_to_binary(M):
     """
@@ -54,10 +54,10 @@ def spikes_counter(M, timewin):
     return counts
 
 
-
 def firing_rates(spike_data, time):
     'Return firing rate for each neuron n from *spike_data*'
     return (spike_data.sum(axis=-1)).flatten() / time
+
 
 def fano_factor(spike_data):
     """
@@ -66,6 +66,7 @@ def fano_factor(spike_data):
     *m* - time steps
     """
     return (np.var(spike_data, axis=1)/np.mean(spike_data, axis=1)).flatten()
+
 
 def corr_coef(trial_data):
     """
@@ -91,6 +92,7 @@ def corr_coef(trial_data):
             rho[j, i] = rho[i, j]
     return rho
 
+
 def corr_coef_new(trial_data):
     """
     computes pairwise correlation coefficient form given matrix of trial data
@@ -114,6 +116,7 @@ def corr_coef_new(trial_data):
             rho[i, j] = np.mean(cov_n)
             rho[j, i] = rho[i, j]
     return rho
+
 
 def extract_cluster_corr_coef(rho, k=50):
     """
@@ -194,6 +197,7 @@ def remove_nans(m, keep_matrix=False):
         m = m[np.isfinite(m)]
     return m
 
+
 def sample_in_cluster(nrns=4000, k=50, picked=20):
     '''
     Reduce number of neurons to *picked* in every of *k* clusters.
@@ -210,6 +214,7 @@ def sample_in_cluster(nrns=4000, k=50, picked=20):
         ix_ = np.random.choice(ncl, picked, replace=False)
         idxvec[i*picked:(i+1)*picked] = nrnnumbers[i*ncl:(i+1)*ncl][ix_]
     return idxvec.astype('int')
+
 
 def plot_histogram(data1, data2, binwidth, xlabel=''):
     """
@@ -230,6 +235,7 @@ def plot_histogram(data1, data2, binwidth, xlabel=''):
     plt.legend(['mean uni', 'mean clus', 'Uniform', 'Clustered'])
     plt.xlabel(xlabel)
     plt.ylabel('Count')
+
 
 def plot_correlation(rho1, rho2, binwidth, title='', show=True):
     """
