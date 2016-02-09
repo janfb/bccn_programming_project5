@@ -131,30 +131,28 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
         connections.connect_random(all_neurons[n_e:(n_e + n_i)], all_neurons[n_e:(n_e + n_i)], sparseness=p_ii,
                                    weight=wii)
 
-        # run this network for some number of trials, every time with different initial values
-        for trial in range(trials):
-            # set up spike monitors
-            spike_mon_e = SpikeMonitor(neurons_e)
-            spike_mon_i = SpikeMonitor(neurons_i)
-            spike_mon_e.reinit()
-            spike_mon_i.reinit()
-            # set initial conditions
-            all_neurons.V = vr + (vt - vr) * np.random.rand(len(all_neurons))
+        # set up spike monitors
+        spike_mon_e = SpikeMonitor(neurons_e)
+        spike_mon_i = SpikeMonitor(neurons_i)
+        # set up network with monitors
+        network = Network(all_neurons, connections, spike_mon_e, spike_mon_i)
 
-            # set up network with monitors
-            network = Network(all_neurons, connections, spike_mon_e, spike_mon_i)
+        # run this network for some number of trials, every time with
+        for trial in range(trials):
+            # different initial values
+            all_neurons.V = vr + (vt - vr) * np.random.rand(len(all_neurons)) * 1.4
 
             # Calibration phase
             # run for the first half of the time to let the neurons adapt
-            network.run(t / 2)
+            network.run(t/2)
 
             # reset monitors to start recording phase
-            spike_mon_e.reinit()
             spike_mon_i.reinit()
+            spike_mon_e.reinit()
 
             # stimulation if duration is given
             # define index variable for the stimulation possibility (is 0 for stimulation time=0)
-            t_stim_idx = int(t_stim * ms / winlen)
+            t_stim_idx = int(t_stim / (winlen/ms))
             if not(t_stim==0):
                 # Stimulation phase, increase input to subset of clusters
                 all_neurons[:400].mu += 0.07 * dv
@@ -162,33 +160,26 @@ def run_simulation(realizations=1, trials=1, t=3000 * ms, alpha=1, ree=1,
                 # set back to normal
                 all_neurons[:400].mu -= 0.07 * dv
                 # save data
-                print spikes_counter(spike_mon_e, winlen).shape
-                print all_data[realization, trial, :n_e , :t_stim_idx].shape
-                print t_stim_idx
                 all_data[realization, trial, :n_e, :t_stim_idx] = spikes_counter(spike_mon_e, winlen)
                 all_data[realization, trial, n_e:, :t_stim_idx] = spikes_counter(spike_mon_i, winlen)
                 # reset monitors
                 spike_mon_e.reinit()
                 spike_mon_i.reinit()
             # run the remaining time of the simulation
-            network.run((t / 2 - t_stim * ms), report='text')
+            network.run((t/2) - t_stim*ms, report='text')
 
-            # TODO save the spike monitor output to the all_data matrix.
+            # save results
             all_data[realization, trial, :n_e, t_stim_idx:] = spikes_counter(spike_mon_e, winlen)
             all_data[realization, trial, n_e:, t_stim_idx:] = spikes_counter(spike_mon_i, winlen)
 
-    if verbose:
-        # Plot spike raster plots, blue exc neurons, red inh neurons
-        plt.figure()
-        plt.subplot(211)
-        raster_plot(spike_mon_i, color='r')
-        plt.title('Inhibitory neurons')
-        plt.subplot(212)
-        raster_plot(spike_mon_e)
-        plt.title('Excitatory neurons')
+            if verbose:
+                plt.ion()
+                plt.figure()
+                raster_plot(spike_mon_e)
+                plt.title('Excitatory neurons')
 
-        # Show the plots
-        plt.show()
+            spike_mon_e.reinit()
+            spike_mon_i.reinit()
 
     return all_data
 
