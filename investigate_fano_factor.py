@@ -9,7 +9,7 @@ nffs = np.zeros_like(ree_steps)
 
 for i, ree in enumerate(ree_steps):
     # run simulation with one network, nine trials
-    data = run_simulation(trials=10, ree=ree, verbose=False, winlen=100 * ms)
+    data = run_simulation(trials=10, ree=ree, verbose=False, winlen=100 * ms, t_stim=1000)
     # take only excitatory neurons
     data = data[0,:,:4000,:]
     # compute fano factor
@@ -21,4 +21,4 @@ for i, ree in enumerate(ree_steps):
     print "ree = {} done".format(ree)
     print "ff = {}".format(ff[i])
 
-np.save('Data/ff_vs_ree', [ree_steps, ff, nnans, nffs])
+np.save('Data/ff_vs_ree_working', [ree_steps, ff, nnans, nffs])
